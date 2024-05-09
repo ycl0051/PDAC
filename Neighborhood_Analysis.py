@@ -2,6 +2,8 @@
 # coding: utf-8
 # Author: YangChenlu
 
+import itertools
+
 #### create dic {nmf:bin}
 with open('nmf_h_matrix.txt', 'r') as file:
     lines = file.readlines()
@@ -23,9 +25,38 @@ with open('nmf_h_matrix.txt', 'r') as file:
                 break
         result_dict[row_name] = selected_cols
 
-#### output
-df = pd.DataFrame(list(result_dict.items()), columns=['Key', 'Value'])
-df['Value'] = df['Value'].astype(str)
-df['Value'] = df['Value'].str.replace('[', '').str.replace(']', '').str.replace("'",'')
-txt_file_path = 'nmf_cutoff_sum0.4_binnames.txt'
-df.to_csv(txt_file_path, sep='\t', index=False, header=None)
+#### create dic {bin:nmf}
+adjusted_dict = {}
+for key, values in result_dict.items():
+    for value in values:
+        if value not in adjusted_dict:
+            adjusted_dict[value] = []
+        adjusted_dict[value].append(key)
+
+#### Calculate distance 
+nmf_numbers = list(result_dict.keys())
+with open('coordinates_distance_w0.4.txt', 'w') as file:
+    for nmf_number1, nmf_number2 in itertools.product(nmf_numbers, repeat=2):
+        percent_nmf = 0
+        for coordinates in result_dict[nmf_number1]:
+            x, y = coordinates.split(",")
+            current_coordinates = []
+            for i in range(int(x) - 1, int(x) + 2):
+                for j in range(int(y) - 1, int(y) + 2):
+                    if i == int(x) and j == int(y):
+                        continue  # exclude center spot
+                    current_coordinates.append(str(i) + ',' + str(j))        
+            # calculate the proportion of bins in one NMF module around one of the bins in the target NMF
+            total_count = 0
+            nmf_count = 0
+            for i in range(0,8):
+                total_count += len(adjusted_dict.get(current_coordinates[i], []))
+                if nmf_number2 in adjusted_dict.get(current_coordinates[i], []):
+                    nmf_count += 1
+            if total_count >0:
+                percent_nmf += nmf_count/total_count
+        percent = percent_nmf/len(result_dict[nmf_number1])
+        print(nmf_number1,nmf_number2,percent)
+        file.write(f"{nmf_number1} {nmf_number2} {percent}\n")
+
+# Heatmap plots were done in R
