@@ -24,3 +24,30 @@ rownames(w_matrix) <- rownames(data)
 colnames(h_matrix) <- colnames(data)
 write.table(w_matrix, "nmf_w_matrix.xls", sep = "\t", row.names = TRUE, col.names = NA)
 write.table(h_matrix, "nmf_h_matrix.xls", sep = "\t", row.names = TRUE, col.names = NA)
+
+####  2.NMF correlation
+library(plyr)
+library(corrplot)
+library(stats)
+#### combine NMF modules from all samples ####
+all <- join_all(list(sample_list),type='full')
+
+#### each NMF module keeps top n genes ####
+top_n_row_names <- apply(all[, -1], 2, function(col) {
+  top_indices <- order(col, decreasing = TRUE)[1:n]  
+  rownames(all[top_indices, ]) 
+})
+all_top_n <- all[which(rownames(all) %in% top_n_row_names),]
+
+#### correlation ####
+cor_mat = cor(all_top_n, method = "pearson")
+p <- corrplot(cor_mat, type = "full", col = rev(COL2('RdBu', 200)), tl.pos = "l",tl.col = "black", tl.srt = 45, order = "hclust", method = "color"
+              #,addCoef.col='black'
+              )
+
+#### dendrogram ####
+corr <- p$corr
+method = 'complete'
+tree = hclust(as.dist(1 - corr), method = method)
+test <- as.dendrogram(tree)
+plot(test)
