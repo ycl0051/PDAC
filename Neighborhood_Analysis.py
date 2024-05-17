@@ -18,8 +18,7 @@ with open('nmf_h_matrix.txt', 'r') as file:
         cumulative_sum = 0  
         selected_cols = []  
         for value in sorted_values:
-            cumulative_sum += float(value)
-            if cumulative_sum <= 0.4:   # whether the sum is greater than 0.4
+            if float(value) >= float(sorted_values[0])/5*2:  
                 selected_cols.append(sorted_cols[sorted_values.index(value) + 1])     
             else:
                 break
